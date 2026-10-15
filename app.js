@@ -317,7 +317,7 @@
   /* ---------- the scene: a neon road into the city, drawn on the canvas behind everything */
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const cv = $('#bg'), cx2 = cv.getContext('2d');
-  const scene = { t: 0, speed: 0.35, k: 0.18, w: 0, h: 0, stars: [], bld: [], cars: [], last: 0 };
+  const scene = { t: 0, speed: 0.3, k: 0.1, w: 0, h: 0, stars: [], bld: [], cars: [], last: 0 };
   function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function seedScene() {
     const R = rng(7);
@@ -361,7 +361,7 @@
       c.fillStyle = 'rgba(' + col + ',' + (a * 0.18) + ')'; c.fillRect(x - gap - r * 2.2, yy - r * 1.2, (gap + r * 2.2) * 2, r * 2.4);
       c.fillStyle = 'rgba(' + col + ',' + a + ')'; c.fillRect(x - gap - r, yy - r * 0.5, r * 2, r); c.fillRect(x + gap - r, yy - r * 0.5, r * 2, r);
     }
-    c.fillStyle = 'rgba(9,13,28,' + (0.74 * (1 - k)) + ')'; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(9,13,28,' + (0.82 * (1 - k)) + ')'; c.fillRect(0, 0, w, h);
   }
   function loop(now) { if (!document.hidden) drawScene(now); else scene.last = 0; requestAnimationFrame(loop); }
   seedScene(); sizeScene(); window.addEventListener('resize', sizeScene);
@@ -383,7 +383,7 @@
     if (intro.hidden) return;
     clearTimeout(introTimer); try { sessionStorage.setItem('bukz-intro', '1'); } catch (e) { }
     intro.classList.add('out'); document.body.classList.remove('intro'); document.body.classList.add('in');
-    tweenScene(0.18, 0.35, 1600); moveInd();
+    tweenScene(0.1, 0.3, 1600); moveInd();
     setTimeout(() => { intro.hidden = true; }, 900);
   }
   intro.addEventListener('click', enterShop);
@@ -420,7 +420,7 @@
     parts.push('<span><em class="dim">delivered</em><b>' + esc(fmt.gta(state.gtaOut)) + '</b> · ' + state.handles.size + ' handles</span>');
     parts.push('<span><em class="dim">drops</em><b>' + state.drops.length + '</b> · fee pot $' + state.pot.toFixed(2) + '</span>');
     parts.push('<span><em class="dim">ledger</em><b>' + state.entries.length + '</b> entries · ' + esc(fmt.sol(state.feesSol)) + ' claimed</span>');
-    const html = parts.join(''); $('#tk').innerHTML = html + html;
+    const html = parts.join(''); const tk = $('#tk'); if (tk) tk.innerHTML = html + html;
   }
 
   /* ---------- count-ups */
