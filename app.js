@@ -389,8 +389,7 @@
   intro.addEventListener('click', enterShop);
   document.addEventListener('keydown', e => { if (!intro.hidden && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); enterShop(); } });
   $('#replay').addEventListener('click', () => { go('home', false); startIntro(); });
-  let seen = false; try { seen = !!sessionStorage.getItem('bukz-intro'); } catch (e) { }
-  if (REDUCED || (seen && !/[?&]intro\b/.test(location.search))) { intro.hidden = true; document.body.classList.remove('intro'); document.body.classList.add('in'); }
+  if (REDUCED) { intro.hidden = true; document.body.classList.remove('intro'); document.body.classList.add('in'); }
   else startIntro();
 
   /* ---------- pointer: tilt on items, light on cards */
