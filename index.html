@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bukz</title>
+<meta name="description" content="bukz. The shop for the new city. Creator fees buy real in-game cars into one public garage. Every receipt on the wall.">
+<meta property="og:title" content="bukz — the shop for the new city">
+<meta property="og:description" content="Fees buy the cars. Receipts on the wall.">
+<meta property="og:image" content="https://bukz.vercel.app/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://bukz.vercel.app/img/og.jpg">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="img/favicon-64.png">
+<link rel="apple-touch-icon" href="img/favicon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=2">
+<noscript><style>body.intro .top,body.intro main,body.intro footer{visibility:visible!important}#intro{display:none}</style></noscript>
+</head>
+<body class="intro">
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<!-- intro: the drive into the city -->
+<div id="intro" hidden>
+  <button class="skip" id="skip">skip ›</button>
+  <div class="in-box">
+    <img class="in-mark" src="img/mark.png" alt="" width="84" height="94">
+    <div class="in-word" aria-label="bukz"><span>b</span><span>u</span><span>k</span><span>z</span></div>
+    <div class="in-line">the shop for the new city.</div>
+    <div class="in-load"><i id="in-bar"></i></div>
+    <div class="in-tip" id="in-tip">loading the new city…</div>
+    <button class="btn in-enter" id="enter" hidden>Enter the shop</button>
+  </div>
+  <div class="in-foot"><span>est. 2026</span><span id="in-clock">—</span><span>opening nov 19</span></div>
+</div>
+
+<header class="top">
+  <a class="brand" href="#home"><img src="img/mark.png" alt="" width="34" height="38"><span>bukz</span></a>
+  <nav class="tabs" id="tabs">
+    <button data-tab="home" class="on">Shop</button>
+    <button data-tab="showroom">Showroom</button>
+    <button data-tab="garage">Garage</button>
+    <button data-tab="ledger">Ledger</button>
+    <button data-tab="heist">Heist board</button>
+    <button data-tab="faq">FAQ</button>
+    <i class="ind"></i>
+  </nav>
+  <div class="topr">
+    <span class="stars" id="stars" title="wanted level: live buys vs sells, last hour"><i></i><i></i><i></i><i></i><i></i></span>
+    <a class="btn ghost" id="xlink" href="#" target="_blank" rel="noopener">X</a>
+    <a class="btn" id="buytop" href="#" target="_blank" rel="noopener">Buy</a>
+  </div>
+</header>
+<div class="ticker" id="ticker" aria-hidden="true"><div class="tk" id="tk"></div></div>
+
+<main>
+<!-- ================= home -->
+<section class="panel on" id="tab-home">
+  <div class="hero">
+    <div class="hero-l">
+      <div class="eyebrow"><span class="dot"></span><span id="live-word">offline</span> · the shop for the new city</div>
+      <h1><span class="grad">bukz</span></h1>
+      <p class="lead">A dealership that runs on trading fees. Every car on the lot is paid for by the chart, parked in one public garage, and logged with a receipt. The garage moves into the new city on day one.</p>
+      <div class="ca" id="ca-box">
+        <code id="ca-text">CA not set. The shop opens with it.</code>
+        <button class="btn sm" id="copyca" disabled>Copy</button>
+      </div>
+      <div class="row">
+        <a class="btn" id="buy" href="#" target="_blank" rel="noopener">Buy on pump.fun</a>
+        <a class="btn ghost" id="chart" href="#" target="_blank" rel="noopener">Chart</a>
+        <button class="btn ghost" data-go="showroom">See the showroom</button>
+      </div>
+      <p class="fine">Items stay in the shop's account. They are not backing, never sold for holders, never handed out. Not affiliated with Rockstar or Take-Two. Memecoins are extremely risky. Nothing here is advice.</p>
+    </div>
+    <div class="hero-r">
+      <div class="card stat-card">
+        <div class="card-h"><span>Pause menu</span><span class="mono" id="stamp">—</span></div>
+        <div class="stats">
+          <div><small>Cash (market cap)</small><b id="s-mc">—</b></div>
+          <div><small>24h volume</small><b id="s-vol">—</b></div>
+          <div><small>Price</small><b id="s-px">—</b></div>
+          <div><small>1h</small><b id="s-h1">—</b></div>
+          <div><small>Buys / sells, 1h</small><b id="s-bs">—</b></div>
+          <div><small>Wanted level</small><b id="s-wl">—</b></div>
+        </div>
+        <div class="count">
+          <small>The new city opens in</small>
+          <div class="cd" id="cd"><b>--</b><i>d</i><b>--</b><i>h</i><b>--</b><i>m</i><b>--</b><i>s</i></div>
+        </div>
+      </div>
+      <div class="card next-card" id="next-card">
+        <div class="card-h"><span>Next on the lot</span><span class="tag" id="next-tag">queued</span></div>
+        <div class="next-name" id="next-name">—</div>
+        <div class="bar"><i id="next-bar"></i></div>
+        <div class="next-sub" id="next-sub">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- the route: fees -> cards -> GTA$ -> car -->
+  <div class="route card">
+    <div class="card-h"><span>How a car gets on the lot</span><span class="mono">one loop, every week</span></div>
+    <div class="flow" id="flow">
+      <div class="node"><div class="ic coin">◎</div><b>Fees</b><small>every trade pays the creator fee</small></div>
+      <div class="arrow"><i></i><i></i><i></i></div>
+      <div class="node"><div class="ic card-ic">▭</div><b>Cash card</b><small>bought at the official store</small></div>
+      <div class="arrow"><i></i><i></i><i></i></div>
+      <div class="node"><div class="ic gta">$</div><b>In-game cash</b><small>lands in the shop account</small></div>
+      <div class="arrow"><i></i><i></i><i></i></div>
+      <div class="node"><div class="ic car">⬢</div><b>The car</b><small>parked in the garage, receipt on the wall</small></div>
+    </div>
+  </div>
+
+  <!-- calculator -->
+  <div class="grid2">
+    <div class="card calc">
+      <div class="card-h"><span>Fee calculator</span><span class="mono">volume → cars</span></div>
+      <label>24h volume (USD) <input type="range" id="c-vol" min="10000" max="5000000" step="10000" value="500000"><output id="c-vol-o">$500,000</output></label>
+      <label>Creator fee share <input type="range" id="c-fee" min="0.05" max="0.95" step="0.05" value="0.95"><output id="c-fee-o">0.95%</output></label>
+      <div class="calc-out">
+        <div><small>Fees per day</small><b id="c-fees">—</b></div>
+        <div><small>In-game cash per day</small><b id="c-gta">—</b></div>
+        <div><small>Next item in</small><b id="c-days">—</b></div>
+        <div><small>Whole showroom in</small><b id="c-cars">—</b></div>
+      </div>
+      <p class="fine">Creator fee tiers on pump.fun change with market cap; this uses the share you set. Past volume is not a promise.</p>
+    </div>
+    <div class="card">
+      <div class="card-h"><span>Cash card rates</span><span class="mono">official store</span></div>
+      <table class="tbl" id="rates">
+        <thead><tr><th>Card</th><th>Costs</th><th>Gives</th><th>Per $1</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="fine">The shop buys the biggest card the fees allow. Rates are the store's, not ours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= showroom -->
+<section class="panel" id="tab-showroom">
+  <div class="sec-h"><h2>Showroom</h2><p>What the shop buys, in order. Prices are in-game. Status comes from the ledger.</p></div>
+  <div class="filters" id="filters"><button class="on" data-f="all">All</button><button data-f="Vehicle">Vehicles</button><button data-f="Property">Property</button><button data-f="Aircraft">Aircraft</button><button data-f="Business">Business</button><button data-f="Vessel">Vessels</button></div>
+  <div class="items" id="items"></div>
+</section>
+
+<!-- ================= garage -->
+<section class="panel" id="tab-garage">
+  <div class="sec-h"><h2>Garage</h2><p>What the shop owns. Every item here has a receipt.</p></div>
+  <div class="garage-top">
+    <div class="card"><small>Items owned</small><b id="g-n">0</b></div>
+    <div class="card"><small>In-game cash in the account</small><b id="g-bal">GTA$ 0</b></div>
+    <div class="card"><small>Spent on cards</small><b id="g-usd">$0</b></div>
+    <div class="card"><small>Fees claimed</small><b id="g-sol">0 SOL</b></div>
+  </div>
+  <div class="items" id="garage"></div>
+  <div class="empty" id="g-empty">The garage is empty. The first car is <b id="g-away">—</b> away.</div>
+</section>
+
+<!-- ================= ledger -->
+<section class="panel" id="tab-ledger">
+  <div class="sec-h"><h2>Ledger</h2><p>Every claim, every card, every purchase. Public, exportable, boring on purpose.</p></div>
+  <div class="row between">
+    <div class="mono small" id="l-meta">account: — · updated: —</div>
+    <div class="row"><button class="btn ghost sm" id="csv">Export CSV</button><a class="btn ghost sm" href="ledger.json" target="_blank" rel="noopener">Raw JSON</a></div>
+  </div>
+  <table class="tbl" id="ledger"><thead><tr><th>Date</th><th>Entry</th><th>SOL</th><th>USD</th><th>GTA$</th><th>Item</th><th>Proof</th></tr></thead><tbody></tbody></table>
+  <div class="empty" id="l-empty">The first entry is still ahead.</div>
+</section>
+
+<!-- ================= heist board -->
+<section class="panel" id="tab-heist">
+  <div class="sec-h"><h2>Heist board</h2><p>Missions. Each one is a milestone with a receipt or a screenshot when it's done.</p></div>
+  <div class="missions" id="missions"></div>
+</section>
+
+<!-- ================= faq -->
+<section class="panel" id="tab-faq">
+  <div class="sec-h"><h2>Talk to the fence</h2><p>Straight answers.</p></div>
+  <div class="faq" id="faq">
+    <details open><summary>What is bukz?</summary><p>A memecoin on Solana with one job: the creator fees from its trading buy real in-game vehicles and properties into a single public game account that the shop controls. The showroom lists what it buys, the garage shows what it owns, the ledger shows every step.</p></details>
+    <details><summary>How do fees become cars?</summary><p>Fees are claimed from pump.fun in SOL, sold for dollars, spent on official in-game cash cards from the publisher's own store, which land as in-game cash in the shop account. The account buys the next item in the showroom order. Receipts and screenshots go on the ledger.</p></details>
+    <details><summary>Do holders get the cars?</summary><p>No. The items stay in the shop's account. They are not backing for the token, they are never sold for holders, and they are never handed out. The point is a garage everyone can see filling up.</p></details>
+    <details><summary>Who controls the account?</summary><p>The shop's team. The account name goes on the ledger the day the first purchase is made, with screenshots. The ledger is a plain JSON file anyone can read.</p></details>
+    <details><summary>What happens on November 19?</summary><p>The new game opens. If the new city has purchases, the garage moves there on day one and the showroom list is replaced with the new city's prices. If it doesn't, the shop keeps buying in the current game. Either way the ledger continues.</p></details>
+    <details><summary>Is this affiliated with Rockstar or Take-Two?</summary><p>No. bukz is an independent fan project. Cash cards are bought from the official store at the published price like any other customer. All game names and marks belong to their owners.</p></details>
+    <details><summary>Is this advice?</summary><p>No. Memecoins are extremely risky and most go to zero. Nothing on this site is financial advice.</p></details>
+  </div>
+</section>
+</main>
+
+<!-- drawer -->
+<div id="drawer" hidden>
+  <div class="dr-bg"></div>
+  <div class="dr">
+    <button class="x" id="dr-x">×</button>
+    <div class="dr-tier" id="dr-tier"></div>
+    <h3 id="dr-name"></h3>
+    <div class="dr-price" id="dr-price"></div>
+    <p id="dr-note"></p>
+    <div class="dr-stat" id="dr-stat"></div>
+    <div class="bar"><i id="dr-bar"></i></div>
+    <div class="dr-sub" id="dr-sub"></div>
+    <div class="dr-rec" id="dr-rec"></div>
+  </div>
+</div>
+
+<!-- rugged -->
+<div id="rugged" hidden><div><b>RUGGED</b><span id="rug-why">-30% in an hour. the lot is still here.</span><button class="btn" id="rug-x">respawn</button></div></div>
+<div id="toasts"></div>
+
+<footer>
+  <div><img src="img/mark.png" alt="" width="22" height="24"> bukz · the shop for the new city</div>
+  <div class="small">items stay in the shop's account · not backing · not affiliated with Rockstar or Take-Two · memecoins are extremely risky · nothing here is advice</div>
+  <div class="small"><button class="lnk" id="replay">replay intro</button> · keys 1–6 switch tabs</div>
+</footer>
+
+<script src="config.js?v=2"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>
