@@ -58,7 +58,7 @@
   /* ---------- links + CA */
   const buyUrl = CA ? 'https://pump.fun/coin/' + CA : 'https://pump.fun/';
   const chartUrl = CA ? 'https://dexscreener.com/solana/' + CA : 'https://dexscreener.com/solana';
-  $('#buy').href = buyUrl; $('#buytop').href = buyUrl; $('#chart').href = chartUrl; $('#xlink').href = C.X || 'https://x.com/';
+  $('#buy').href = buyUrl; $('#chart').href = chartUrl; const bt = $('#buytop'); if (bt) bt.href = buyUrl; const xl = $('#xlink'); if (xl) xl.href = C.X || 'https://x.com/';
   function copyCA() {
     const done = () => toast('CA copied');
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(CA).then(done, () => legacyCopy(CA, done));
@@ -372,12 +372,12 @@
   const intro = $('#intro'); let introTimer = null;
   const TIPS = ['loading the new city…', 'fees buy the cars.', 'receipts on the wall.', 'items stay in the shop. not backing.', 'not affiliated with rockstar or take-two.', 'ready.'];
   function startIntro() {
-    clearInterval(introTimer); window.scrollTo(0, 0); closeDrawer();
+    clearTimeout(introTimer); window.scrollTo(0, 0); closeDrawer();
     document.body.classList.add('intro'); document.body.classList.remove('in');
-    intro.hidden = false; intro.className = ''; $('#enter').hidden = true; $('#in-bar').style.width = '0%';
+    intro.hidden = false; intro.className = '';
     scene.k = 1; scene.speed = 1.7; scene.last = 0;
-    requestAnimationFrame(() => requestAnimationFrame(() => { intro.classList.add('go'); $('#in-bar').style.width = '100%'; }));
-    introTimer = setTimeout(() => { $('#enter').hidden = false; intro.classList.add('ready'); }, 2600);
+    requestAnimationFrame(() => requestAnimationFrame(() => { intro.classList.add('go'); }));
+    introTimer = setTimeout(enterShop, 3000);
   }
   function enterShop() {
     if (intro.hidden) return;
@@ -386,8 +386,7 @@
     tweenScene(0.18, 0.35, 1600); moveInd();
     setTimeout(() => { intro.hidden = true; }, 900);
   }
-  $('#enter').addEventListener('click', enterShop); $('#skip').addEventListener('click', enterShop);
-  intro.addEventListener('click', e => { if (intro.classList.contains('ready') && !e.target.closest('button')) enterShop(); });
+  intro.addEventListener('click', enterShop);
   document.addEventListener('keydown', e => { if (!intro.hidden && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); enterShop(); } });
   $('#replay').addEventListener('click', () => { go('home', false); startIntro(); });
   let seen = false; try { seen = !!sessionStorage.getItem('bukz-intro'); } catch (e) { }
