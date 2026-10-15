@@ -63,7 +63,7 @@
   }
   function legacyCopy(text, done) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed'); } ta.remove(); }
   if (CA) {
-    $('#ca-text').textContent = CA; $('#ca-box').classList.add('set');
+    $('#ca-text').textContent = CA; $('#ca-box').classList.add('set'); $('#ca-box').hidden = false;
     const cp = $('#copyca'); cp.disabled = false; cp.addEventListener('click', copyCA); $('#ca-text').addEventListener('click', copyCA);
   }
 
@@ -296,7 +296,7 @@
   vol.addEventListener('input', calc); fee.addEventListener('input', calc);
 
   /* ---------- live data (DexScreener), honest offline states */
-  function offline(word, stamp) { $('#live-word').textContent = word; $('.dot').classList.remove('live'); document.body.classList.remove('live'); $('#stamp').textContent = stamp; if (state.live) { state.live = null; renderTicker(); } }
+  function offline(word, stamp) { const lw = $('#live-word'); if (lw) lw.textContent = word; const dot = $('.dot'); if (dot) dot.classList.remove('live'); document.body.classList.remove('live'); $('#stamp').textContent = stamp; if (state.live) { state.live = null; renderTicker(); } }
   function wanted(L) {
     const t = L.buys + L.sells; if (!t) return 0; const r = L.buys / t;
     let w = r >= .75 ? 5 : r >= .65 ? 4 : r >= .55 ? 3 : r >= .45 ? 2 : 1; if (t < 10) w = Math.min(w, 2); return w;
@@ -320,7 +320,7 @@
     } catch (e) { offline('offline', 'no data'); }
   }
   function renderLive(L) {
-    $('#live-word').textContent = 'live'; $('.dot').classList.add('live'); document.body.classList.add('live');
+    const lw = $('#live-word'); if (lw) lw.textContent = 'live'; const dot = $('.dot'); if (dot) dot.classList.add('live'); document.body.classList.add('live');
     $('#stamp').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     countTo($('#s-mc'), L.marketCap, fmt.usd); countTo($('#s-vol'), L.vol, fmt.usd); $('#s-px').textContent = fmt.px(L.price);
     const h = $('#s-h1'); h.textContent = fmt.pct(L.h1); h.className = L.h1 > 0 ? 'up' : L.h1 < 0 ? 'down' : '';
