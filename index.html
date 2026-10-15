@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="img/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 <noscript><style>body.intro .top,body.intro main,body.intro footer{visibility:visible!important}#intro{display:none}</style></noscript>
 </head>
 <body class="intro">
@@ -41,13 +41,14 @@
     <i class="ind"></i>
   </nav>
 </header>
+<div class="ticker" id="ticker" aria-hidden="true"><div class="tk" id="tk"></div></div>
 
 <main>
 <!-- ================= home -->
 <section class="panel on" id="tab-home">
   <div class="hero">
-    <div class="hero-c">
-      <img class="hero-mark" src="img/mark.png" alt="" width="120" height="134">
+    <div class="hero-l">
+      <img class="hero-mark" src="img/mark.png" alt="" width="72" height="80">
       <h1><span class="grad">bukz</span></h1>
       <p class="tagline">The shop for the new city.</p>
       <p class="lead">Buy in-game cash for any GTA player and gift it to their handle. The coin's fees pay for the drops. Every receipt on the wall.</p>
@@ -55,16 +56,15 @@
         <code id="ca-text">CA not set. The shop opens with it.</code>
         <button class="btn sm" id="copyca" disabled>Copy</button>
       </div>
-      <div class="row center">
+      <div class="row">
         <button class="btn lg" data-go="shelf">Gift a card</button>
         <a class="btn lg ghost" id="buy" href="#" target="_blank" rel="noopener">Buy on pump.fun</a>
+        <a class="btn lg ghost" id="chart" href="#" target="_blank" rel="noopener">Chart</a>
       </div>
     </div>
-  </div>
-  <div class="big-tape" aria-hidden="true"><div class="bt"><span>gift cash to any handle</span><span>fees pay for the drops</span><span>receipts on the wall</span><span>the shop for the new city</span><span>gift cash to any handle</span><span>fees pay for the drops</span><span>receipts on the wall</span><span>the shop for the new city</span></div></div>
-  <div class="hero-r two">
+    <div class="hero-r">
       <div class="card stat-card">
-        <div class="card-h"><span>Pause menu</span><span class="mono"><a id="chart" href="#" target="_blank" rel="noopener">chart ↗</a> · <span id="stamp">—</span></span></div>
+        <div class="card-h"><span>Pause menu</span><span class="mono" id="stamp">—</span></div>
         <div class="stats">
           <div><small>Cash (market cap)</small><b id="s-mc">—</b></div>
           <div><small>24h volume</small><b id="s-vol">—</b></div>
@@ -84,7 +84,9 @@
         <div class="bar"><i id="next-bar"></i></div>
         <div class="next-sub" id="next-sub">—</div>
       </div>
+    </div>
   </div>
+  <div class="big-tape" aria-hidden="true"><div class="bt"><span>gift cash to any handle</span><span>fees pay for the drops</span><span>receipts on the wall</span><span>the shop for the new city</span><span>gift cash to any handle</span><span>fees pay for the drops</span><span>receipts on the wall</span><span>the shop for the new city</span></div></div>
 
   <!-- the shelf, short -->
   <div class="sec" id="home-shelf">

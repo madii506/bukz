@@ -435,3 +435,19 @@ main{max-width:1120px}
 .card-h a{color:var(--p3);text-decoration:underline}
 .stat-card .card-h .mono{display:flex;gap:6px;align-items:center}
 @media(max-width:720px){.sec{margin-top:64px}.big-tape{margin:0 -14px}.hero{min-height:0}}
+
+/* ---------- v6: original two-column structure, bigger type */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:center;min-height:0;padding:36px 0 44px;margin-bottom:0;place-items:initial}
+.hero-l .hero-mark{width:72px;margin:0 0 10px;animation:float 5s ease-in-out infinite}
+.hero-l h1{font-size:clamp(88px,11vw,150px);line-height:.9;margin:0 0 6px}
+.hero-l .tagline{font-size:clamp(22px,2.6vw,30px);margin:4px 0 14px}
+.hero-l .lead{font-size:clamp(16px,1.5vw,19px);max-width:600px;margin:0 0 26px}
+.hero-l .row{gap:12px}
+.hero-r{gap:16px}
+body.in #tab-home .hero-l>*{animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
+body.in #tab-home .hero-l>:nth-child(1){animation-delay:.05s}body.in #tab-home .hero-l>:nth-child(2){animation-delay:.15s}body.in #tab-home .hero-l>:nth-child(3){animation-delay:.25s}body.in #tab-home .hero-l>:nth-child(4){animation-delay:.35s}body.in #tab-home .hero-l>:nth-child(5){animation-delay:.45s}body.in #tab-home .hero-l>:nth-child(6){animation-delay:.55s}
+body.in #tab-home .hero-r>.card{animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
+body.in #tab-home .hero-r>.card:nth-child(1){animation-delay:.3s}body.in #tab-home .hero-r>.card:nth-child(2){animation-delay:.45s}
+.big-tape{margin-top:8px}
+@media(max-width:980px){.hero{grid-template-columns:1fr}}
+@media(max-width:720px){.hero{padding:24px 0 30px}.hero-l h1{font-size:clamp(72px,20vw,110px)}.hero-l .row .btn.lg{width:100%}}
