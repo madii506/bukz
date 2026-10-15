@@ -2,7 +2,10 @@
 (function () {
   'use strict';
   const C = window.BUKZ || {};
-  const ITEMS = C.ITEMS || [];
+  const CARDS = C.CARDS || [];
+  const SHOP_FEE = +C.SHOP_FEE_PCT || 0;
+  const DROP = CARDS.find(c => c.id === C.DROP_CARD) || CARDS[CARDS.length - 1];
+  const XHANDLE = (String(C.X || '').match(/x\.com\/([A-Za-z0-9_]+)/) || [])[1] || '';
   const GPU = C.GTA_PER_USD || 80000;
   const CA = String(C.CA || '').trim();
   const $ = (s, r) => (r || document).querySelector(s);
@@ -69,182 +72,149 @@
 
   /* ---------- countdown */
   const release = new Date(C.RELEASE || '2026-11-19T00:00:00-05:00').getTime();
-  const cdEls = $$('#cd b');
+  const cdEls = $$('#cd b'), cd2 = $$('#cd2 b');
   function tick() {
     const d = release - Date.now();
-    if (d <= 0) { cdEls.forEach(b => b.textContent = '00'); $('.count small').textContent = 'The new city is open'; return; }
+    if (d <= 0) { cdEls.concat(cd2).forEach(b => b.textContent = '00'); $('.count small').textContent = 'The new city is open'; return; }
     const s = Math.floor(d / 1000);
     [Math.floor(s / 86400), Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60].forEach((n, i) => {
-      const v = String(n).padStart(2, '0'); if (cdEls[i].textContent === v) return;
+      const v = String(n).padStart(2, '0'); if (cd2[i]) cd2[i].textContent = v; if (cdEls[i].textContent === v) return;
       cdEls[i].textContent = v; cdEls[i].classList.remove('pop'); void cdEls[i].offsetWidth; cdEls[i].classList.add('pop');
     });
   }
   tick(); setInterval(tick, 1000);
 
-  /* ---------- cash card rates (official store list prices; in-game dollars per card) */
-  const CARDS = [[99.99, 8000000], [49.99, 3500000], [19.99, 1250000], [9.99, 500000], [4.99, 200000], [2.99, 100000]];
+
+  /* ---------- cash card rates (official store list prices) */
   function renderRates() {
     const tb = $('#rates tbody'); tb.innerHTML = '';
-    const best = Math.max.apply(null, CARDS.map(c => c[1] / c[0]));
-    CARDS.forEach(([usd, gta]) => {
-      const per = gta / usd; const tr = document.createElement('tr'); if (per === best) tr.className = 'best';
-      tr.innerHTML = '<td>$' + usd.toFixed(2) + ' card</td><td class="n">$' + usd.toFixed(2) + '</td><td class="n">' + fmt.gta(gta) + '</td><td class="n">' + nf(per) + (per === best ? ' ★' : '') + '</td>';
+    const best = Math.max.apply(null, CARDS.map(c => c.gta / c.usd));
+    CARDS.slice().reverse().forEach(c => {
+      const per = c.gta / c.usd; const tr = document.createElement('tr'); if (per === best) tr.className = 'best';
+      tr.innerHTML = '<td>' + esc(c.name) + ' · $' + c.usd.toFixed(2) + '</td><td class="n">$' + c.usd.toFixed(2) + '</td><td class="n">' + fmt.gta(c.gta) + '</td><td class="n">' + nf(per) + (per === best ? ' ★' : '') + '</td>';
       tb.appendChild(tr);
     });
+    $('#fee-line').textContent = SHOP_FEE + '%';
   }
 
-  /* ---------- state from the ledger */
-  const state = { entries: [], account: '', updated: '', bal: 0, feesSol: 0, cardsUsd: 0, cardsGta: 0, owned: new Set(), buys: [], next: null, live: null, rugShown: false };
+  /* ---------- state from the ledger. entry: {date, type: fees|order|drop, sol, usd, gta, card, handle, platform, note, proof, img} */
+  const state = { entries: [], updated: '', feesSol: 0, feesUsd: 0, dropsUsd: 0, drops: [], orders: [], gtaOut: 0, handles: new Set(), pot: 0, live: null, rugShown: false };
   function compute() {
-    let bal = 0, sol = 0, usd = 0, gta = 0; const owned = new Set(); state.buys = [];
+    let sol = 0, fusd = 0, dusd = 0, gta = 0; const H = new Set(); state.drops = []; state.orders = [];
     for (const e of state.entries) {
-      if (e.type === 'fees') sol += +e.sol || 0;
-      else if (e.type === 'card') { usd += +e.usd || 0; gta += +e.gta || 0; bal += +e.gta || 0; }
-      else if (e.type === 'buy') { bal -= +e.gta || 0; if (e.item) { owned.add(e.item); state.buys.push(e); } }
+      if (e.type === 'fees') { sol += +e.sol || 0; fusd += +e.usd || 0; }
+      else if (e.type === 'drop') { dusd += +e.usd || 0; gta += +e.gta || 0; state.drops.push(e); if (e.handle) H.add(String(e.handle).toLowerCase()); }
+      else if (e.type === 'order') { gta += +e.gta || 0; state.orders.push(e); if (e.handle) H.add(String(e.handle).toLowerCase()); }
     }
-    state.bal = Math.max(0, bal); state.feesSol = sol; state.cardsUsd = usd; state.cardsGta = gta; state.owned = owned;
-    state.next = ITEMS.find(i => !owned.has(i.id)) || null;
+    state.feesSol = sol; state.feesUsd = fusd; state.dropsUsd = dusd; state.gtaOut = gta; state.handles = H; state.pot = Math.max(0, fusd - dusd);
   }
   async function loadLedger() {
     try {
       const r = await fetch('ledger.json?ts=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
       const j = await r.json();
       state.entries = (j.entries || []).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-      state.account = j.account || ''; state.updated = j.updated || '';
+      state.updated = j.updated || '';
     } catch (e) { state.entries = []; }
     compute(); renderAll();
   }
-  const itemById = id => ITEMS.find(i => i.id === id);
-  const itemName = id => { const it = itemById(id); return it ? it.name : ''; };
-  function statusOf(it) { return state.owned.has(it.id) ? 'owned' : (state.next && state.next.id === it.id ? 'next' : 'queued'); }
-  function progressOf(it) { const st = statusOf(it); return st === 'owned' ? 1 : st === 'next' ? Math.min(1, state.bal / it.gta) : 0; }
-  const LABEL = { owned: 'In the garage', next: 'Next', queued: 'Queued' };
-  const TAGCLS = { owned: 'ok', next: '', queued: 'dim' };
+  const cardById = id => CARDS.find(c => c.id === id);
+  const cardName = id => { const c = cardById(id); return c ? c.name + ' $' + c.usd.toFixed(2) : (id || ''); };
 
-  /* ---------- icons (own line drawings, viewBox 0 0 120 80) */
-  const ICON = {
-    car: '<path d="M12 52L16 38L36 34L48 20H78L94 34L108 38L112 52Z"/><path d="M40 34L50 25H76L88 34"/><path d="M12 52H112"/><circle cx="36" cy="55" r="9"/><circle cx="86" cy="55" r="9"/><path d="M100 44H108"/>',
-    convertible: '<path d="M12 52L16 38L36 34L46 24H62L64 34L108 38L112 52Z"/><path d="M46 24L50 34"/><path d="M12 52H112"/><circle cx="36" cy="55" r="9"/><circle cx="86" cy="55" r="9"/>',
-    garage: '<path d="M20 70V30H100V70"/><path d="M14 30L60 12L106 30"/><path d="M30 70V46H54V70M66 70V46H90V70"/><path d="M30 54H54M66 54H90"/><path d="M8 70H112"/>',
-    tower: '<path d="M32 70V22H88V70"/><path d="M60 22V8"/><path d="M42 32H50M56 32H64M70 32H78M42 44H50M56 44H64M70 44H78M42 56H50M70 56H78"/><path d="M56 70V58H64V70"/><path d="M20 70H100"/>',
-    heli: '<path d="M30 44Q30 30 48 30H72Q86 30 86 44Q86 56 72 56H48Q30 56 30 44Z"/><path d="M86 42L112 36V46L86 48"/><path d="M22 20H100"/><path d="M60 30V20"/><path d="M36 66H84M44 56V66M72 56V66"/><path d="M106 30V52"/>',
-    jet: '<path d="M14 44Q14 36 26 36H92L112 40L92 48H26Q14 48 14 44Z"/><path d="M50 40L36 62H58L70 40"/><path d="M50 48L44 62"/><path d="M24 36L16 20H28L40 36"/><path d="M92 36L98 26"/>',
-    storefront: '<path d="M18 70V36H102V70"/><path d="M14 36L22 22H98L106 36"/><path d="M52 70V48H68V70"/><path d="M40 22V14H80V22"/><path d="M28 46H44V58H28ZM76 46H92V58H76Z"/><path d="M8 70H112"/>',
-    cabinet: '<path d="M40 70V18H80V70"/><path d="M46 30H74V48H46Z"/><path d="M46 56H74"/><path d="M52 62H56M64 62H68"/><path d="M34 70H86"/>',
-    yacht: '<path d="M8 50H112L100 66H24Z"/><path d="M30 50V38H84V50"/><path d="M40 38V28H70V38"/><path d="M58 28V8"/><path d="M58 10L84 28"/><path d="M14 72H106"/>',
-    star: '<path d="M60 10L71 36H100L77 52L85 78L60 62L35 78L43 52L20 36H49Z"/>'
-  };
-  const ICON_BY_ID = { sports: 'car', super: 'car', hyper: 'car', classic: 'convertible', garage: 'garage', pent: 'tower', heli: 'heli', jet: 'jet', club: 'storefront', arcade: 'cabinet', yacht: 'yacht', lot: 'star' };
-  const ICON_BY_TIER = { Vehicle: 'car', Property: 'garage', Aircraft: 'jet', Business: 'storefront', Vessel: 'yacht', Milestone: 'star' };
-  function icon(it) { const k = ICON_BY_ID[it.id] || ICON_BY_TIER[it.tier] || 'star'; return '<svg viewBox="0 0 120 80" aria-hidden="true">' + ICON[k] + '</svg>'; }
-
-  /* ---------- showroom + garage cards */
-  function itemCard(it, no, delay) {
-    const st = statusOf(it), p = progressOf(it);
-    const el = document.createElement('div');
-    el.className = 'item ' + st; el.dataset.id = it.id; el.dataset.tier = it.tier; el.style.animationDelay = (delay * 40) + 'ms';
-    el.innerHTML = '<div class="plate">' + icon(it) + '<span class="tag ' + TAGCLS[st] + '">' + LABEL[st] + '</span><span class="no">#' + String(no).padStart(2, '0') + '</span></div>' +
-      '<div class="it-b"><div class="it-tier">' + esc(it.tier) + '</div><div class="it-name">' + esc(it.name) + '</div>' +
-      '<div class="it-price">' + fmt.gtaShort(it.gta) + '<span>≈ ' + fmt.usdFull(it.gta / GPU) + ' in cards</span></div>' +
-      '<div class="bar"><i class="' + (p >= 1 ? 'full' : '') + '" data-w="' + (p * 100).toFixed(1) + '"></i></div></div>';
-    el.addEventListener('click', () => openDrawer(it));
+  /* ---------- card art: a gift card, drawn inline */
+  function cardArt(c, cls) {
+    return '<div class="gc ' + (cls || '') + '"><div class="gc-top"><img src="img/mark.png" alt="" width="22" height="24"><span>' + esc(c.name) + '</span></div><div class="gc-amt">' + esc(fmt.gtaShort(c.gta)) + '</div><div class="gc-bot"><span>in-game cash</span><span>$' + c.usd.toFixed(2) + '</span></div><i class="gc-shine"></i></div>';
+  }
+  function shelfCard(c, i, big) {
+    const el = document.createElement('div'); el.className = 'shelf-it' + (c.id === DROP.id ? ' drop' : ''); el.style.animationDelay = (i * 50) + 'ms';
+    el.innerHTML = cardArt(c) + '<div class="sh-b"><div class="sh-name">' + esc(c.name) + '<span>' + esc(fmt.gta(c.gta)) + '</span></div><div class="sh-line">' + esc(c.line || '') + '</div><div class="sh-foot"><b>$' + c.usd.toFixed(2) + '</b><small>+ ' + SHOP_FEE + '% · ' + nf(c.gta / c.usd) + ' per $1</small></div><button class="btn sm">Gift this</button></div>';
+    el.querySelector('button').addEventListener('click', e => { e.stopPropagation(); openOrder(c); });
+    el.addEventListener('click', () => openOrder(c));
     return el;
   }
-  function animateBars(root) { requestAnimationFrame(() => requestAnimationFrame(() => $$('.bar i[data-w]', root).forEach(i => i.style.width = i.dataset.w + '%'))); }
-  let filter = 'all';
-  function renderItems() {
-    const box = $('#items'); box.innerHTML = '';
-    ITEMS.forEach((it, i) => { const el = itemCard(it, i + 1, i); if (filter !== 'all' && it.tier !== filter) el.style.display = 'none'; box.appendChild(el); });
-    animateBars(box);
-  }
-  $('#filters').addEventListener('click', e => {
-    const b = e.target.closest('button[data-f]'); if (!b) return;
-    $$('#filters button').forEach(x => x.classList.toggle('on', x === b)); filter = b.dataset.f;
-    let n = 0; $$('#items .item').forEach((el, i) => { const show = filter === 'all' || el.dataset.tier === filter; el.style.display = show ? '' : 'none'; if (show) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; el.style.animationDelay = (n++ * 40) + 'ms'; } });
-  });
-  function renderGarage() {
-    countTo($('#g-n'), state.owned.size, v => String(Math.round(v)));
-    countTo($('#g-bal'), state.bal, fmt.gta);
-    countTo($('#g-usd'), state.cardsUsd, fmt.usdFull);
-    countTo($('#g-sol'), state.feesSol, fmt.sol);
-    const g = $('#garage'); g.innerHTML = '';
-    const ownedItems = ITEMS.filter(i => state.owned.has(i.id));
-    ownedItems.forEach((it, i) => g.appendChild(itemCard(it, ITEMS.indexOf(it) + 1, i)));
-    animateBars(g);
-    $('#g-empty').hidden = ownedItems.length > 0;
-    $('#g-away').textContent = state.next ? fmt.gtaShort(Math.max(0, state.next.gta - state.bal)) : '—';
-  }
+  function renderShelf() { ['#shelf', '#shelf-home'].forEach(sel => { const box = $(sel); if (!box) return; box.innerHTML = ''; CARDS.forEach((c, i) => box.appendChild(shelfCard(c, i))); }); }
 
-  /* ---------- next on the lot */
+  /* ---------- next drop + counters */
   function renderNext() {
-    const n = state.next, bar = $('#next-bar');
-    if (!n) {
-      $('#next-name').textContent = 'The lot is full'; $('#next-tag').textContent = 'done'; $('#next-tag').className = 'tag ok';
-      bar.className = 'full'; bar.style.width = '100%'; $('#next-sub').textContent = 'Every item in the showroom has a receipt.'; return;
-    }
-    const p = Math.min(1, state.bal / n.gta), left = Math.max(0, n.gta - state.bal);
-    $('#next-name').textContent = n.name;
-    $('#next-tag').textContent = state.owned.size ? 'next' : 'first'; $('#next-tag').className = 'tag';
-    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = (p * 100).toFixed(1) + '%'; }));
-    $('#next-sub').textContent = fmt.gta(state.bal) + ' of ' + fmt.gta(n.gta) + ' in the account · ' + fmt.gtaShort(left) + ' to go (≈ ' + fmt.usdFull(left / GPU) + ' in cards)';
+    const p = Math.min(1, DROP ? state.pot / DROP.usd : 0), left = DROP ? Math.max(0, DROP.usd - state.pot) : 0;
+    $('#next-name').textContent = DROP ? DROP.name + ' card · ' + fmt.gtaShort(DROP.gta) : '—';
+    $('#next-tag').textContent = state.drops.length ? 'drop #' + (state.drops.length + 1) : 'first drop';
+    const bar = $('#next-bar'); bar.className = p >= 1 ? 'full' : ''; requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = (p * 100).toFixed(1) + '%'; }));
+    $('#next-sub').textContent = '$' + state.pot.toFixed(2) + ' of $' + (DROP ? DROP.usd.toFixed(2) : '—') + ' in the fee pot · $' + left.toFixed(2) + ' to go';
+    countTo($('#g-bal'), state.gtaOut, fmt.gta); countTo($('#g-n'), state.handles.size, v => String(Math.round(v)));
+    countTo($('#g-usd'), state.drops.length, v => String(Math.round(v))); countTo($('#g-sol'), state.feesSol, fmt.sol);
+    countTo($('#d-n'), state.drops.length, v => String(Math.round(v))); countTo($('#d-gta'), state.drops.reduce((a, b) => a + (+b.gta || 0), 0), fmt.gta);
+    countTo($('#d-pot'), state.pot, v => '$' + v.toFixed(2)); $('#d-next').textContent = DROP ? (p >= 1 ? 'funded' : '$' + left.toFixed(2) + ' away') : '—';
+    $('#d-away').textContent = '$' + left.toFixed(2);
+  }
+  function renderDrops() {
+    const box = $('#drops-list'); box.innerHTML = '';
+    state.drops.slice().reverse().forEach((e, i) => {
+      const c = cardById(e.card) || DROP; const el = document.createElement('div'); el.className = 'shelf-it done'; el.style.animationDelay = (i * 40) + 'ms';
+      el.innerHTML = cardArt(c, 'ok') + '<div class="sh-b"><div class="sh-name">' + esc(e.handle || '—') + '<span>' + esc(e.platform || '') + '</span></div><div class="sh-line">' + esc(e.note || 'a drop paid by fees') + '</div><div class="sh-foot"><b>' + esc(fmt.date(e.date)) + '</b>' + (e.proof ? '<a href="' + esc(e.proof) + '" target="_blank" rel="noopener">proof ↗</a>' : '<small>proof pending</small>') + '</div></div>';
+      box.appendChild(el);
+    });
+    $('#d-empty').hidden = state.drops.length > 0;
+  }
+  function renderWall() {
+    const box = $('#wall'); box.innerHTML = '';
+    const imgs = state.entries.filter(e => e.img);
+    imgs.slice().reverse().forEach(e => { const a = document.createElement('a'); a.className = 'rc'; a.href = e.proof || e.img; a.target = '_blank'; a.rel = 'noopener'; a.innerHTML = '<img src="' + esc(e.img) + '" alt="" loading="lazy"><span>' + esc(e.handle || '') + ' · ' + esc(fmt.date(e.date)) + '</span>'; box.appendChild(a); });
+    $('#wall-empty').hidden = imgs.length > 0;
   }
 
-  /* ---------- drawer */
-  const drawer = $('#drawer'); let drArt = null;
-  function openDrawer(it) {
-    if (!drArt) { drArt = document.createElement('div'); drArt.className = 'dr-art'; $('#dr-tier').before(drArt); }
-    const st = statusOf(it), p = progressOf(it);
-    drArt.innerHTML = icon(it); drArt.className = 'dr-art ' + st;
-    $('#dr-tier').textContent = it.tier + ' · #' + String(ITEMS.indexOf(it) + 1).padStart(2, '0');
-    $('#dr-name').textContent = it.name;
-    $('#dr-price').innerHTML = esc(fmt.gta(it.gta)) + '<span>≈ ' + esc(fmt.usdFull(it.gta / GPU)) + ' in cash cards</span>';
-    $('#dr-note').textContent = it.note || '';
-    $('#dr-stat').innerHTML = '<span class="tag ' + TAGCLS[st] + '">' + LABEL[st] + '</span>';
-    const bar = $('#dr-bar'); bar.className = p >= 1 ? 'full' : ''; bar.style.width = '0%';
-    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = (p * 100).toFixed(1) + '%'; }));
-    let sub, rec;
-    if (st === 'owned') {
-      const b = state.buys.find(x => x.item === it.id) || {};
-      sub = 'Bought and parked. ' + (b.date ? 'Receipt dated ' + fmt.date(b.date) + '.' : '');
-      rec = 'receipt · ' + esc(fmt.date(b.date)) + (b.gta ? ' · ' + esc(fmt.gta(b.gta)) : '') + (b.note ? '<br>' + esc(b.note) : '') + '<br>' + (b.proof ? '<a href="' + esc(b.proof) + '" target="_blank" rel="noopener">open the proof ↗</a>' : 'proof link pending');
-    } else if (st === 'next') {
-      const left = Math.max(0, it.gta - state.bal);
-      sub = fmt.gta(state.bal) + ' of ' + fmt.gta(it.gta) + ' in the account. ' + fmt.gtaShort(left) + ' to go, about ' + fmt.usdFull(left / GPU) + ' in cards.';
-      rec = 'no receipt yet · this is the next purchase. When the account holds ' + esc(fmt.gta(it.gta)) + ' the shop buys it and the receipt lands here and on the ledger.';
-    } else {
-      const ahead = ITEMS.slice(0, ITEMS.indexOf(it)).filter(x => !state.owned.has(x.id)).length;
-      sub = ahead + (ahead === 1 ? ' item' : ' items') + ' ahead of it in the queue.';
-      rec = 'queued · the shop buys in showroom order. Nothing here is a promise; the ledger is the only truth.';
-    }
-    $('#dr-sub').textContent = sub; $('#dr-rec').innerHTML = rec;
-    drawer.hidden = false; document.body.style.overflow = 'hidden';
+  /* ---------- order drawer */
+  const drawer = $('#drawer'); let cur = null, code = '';
+  const plat = $('#o-plat'); (C.PLATFORMS || ['PC', 'PlayStation', 'Xbox']).forEach(p => { const o = document.createElement('option'); o.value = o.textContent = p; plat.appendChild(o); });
+  function mkCode() { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 6; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+  function orderSum() {
+    if (!cur) return; const fee = cur.usd * SHOP_FEE / 100, tot = cur.usd + fee;
+    const sol = state.solUsd ? (tot / state.solUsd) : 0;
+    $('#o-sum').innerHTML = '<div><span>Card</span><b>$' + cur.usd.toFixed(2) + '</b></div><div><span>Shop fee ' + SHOP_FEE + '%</span><b>$' + fee.toFixed(2) + '</b></div><div class="tot"><span>Total</span><b>$' + tot.toFixed(2) + (sol ? ' · ≈ ' + sol.toFixed(3) + ' SOL' : '') + '</b></div><div><span>Order code</span><b class="mono">' + code + '</b></div>';
+  }
+  function orderText() {
+    const h = $('#o-handle').value.trim(), x = $('#o-x').value.trim().replace(/^@?/, '@'), n = $('#o-note').value.trim();
+    const tot = cur.usd * (1 + SHOP_FEE / 100);
+    return (XHANDLE ? '@' + XHANDLE + ' ' : '') + 'order ' + code + ': ' + cur.name + ' card ($' + cur.usd.toFixed(2) + ', ' + fmt.gtaShort(cur.gta) + ') → ' + h + ' on ' + plat.value + '. deliver to ' + x + '. total $' + tot.toFixed(2) + ' in SOL.' + (n ? ' note: ' + n : '') + ' $BUKZ';
+  }
+  function openOrder(c) {
+    cur = c; code = mkCode();
+    $('#dr-art').innerHTML = cardArt(c); $('#dr-tier').textContent = 'official cash card · ' + fmt.gta(c.gta);
+    $('#dr-name').textContent = 'Gift the ' + c.name; $('#dr-price').innerHTML = '$' + c.usd.toFixed(2) + '<span>+ ' + SHOP_FEE + '% shop fee</span>';
+    $('#dr-note').textContent = c.line || '';
+    orderSum(); drawer.hidden = false; document.body.style.overflow = 'hidden'; setTimeout(() => $('#o-handle').focus(), 300);
   }
   function closeDrawer() { if (drawer.hidden) return; drawer.hidden = true; document.body.style.overflow = ''; }
-  $('#dr-x').addEventListener('click', closeDrawer);
-  $('.dr-bg').addEventListener('click', closeDrawer);
+  $('#dr-x').addEventListener('click', closeDrawer); $('.dr-bg').addEventListener('click', closeDrawer);
+  $('#order').addEventListener('submit', e => {
+    e.preventDefault(); if (!cur) return;
+    if (!$('#o-handle').value.trim() || !$('#o-x').value.trim()) { toast('Handle and X handle are needed'); return; }
+    window.open('https://x.com/intent/post?text=' + encodeURIComponent(orderText()), '_blank', 'noopener');
+    toast('Order ' + code + ' drafted on X. Pay only after the shop replies.');
+  });
+  $('#o-copy').addEventListener('click', () => { if (!cur) return; const t = orderText(); const done = () => toast('Order copied'); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => legacyCopy(t, done)); else legacyCopy(t, done); });
+  $('#reg').href = 'https://x.com/intent/post?text=' + encodeURIComponent((XHANDLE ? '@' + XHANDLE + ' ' : '') + 'register: my GTA handle is ____ on ____ (PC / PlayStation / Xbox). holding $BUKZ.');
+  $('#nom').href = 'https://x.com/intent/post?text=' + encodeURIComponent((XHANDLE ? '@' + XHANDLE + ' ' : '') + 'nominate: ____ on ____ deserves a drop because ____. $BUKZ');
 
-  /* ---------- ledger table + csv */
-  const TYPES = { fees: 'Fees claimed', card: 'Cash card', buy: 'Purchase' };
+  /* ---------- ledger tables + csv */
+  const TYPES = { fees: 'Fees claimed', drop: 'Drop', order: 'Order' };
+  function rowHtml(e, full) {
+    const tag = '<span class="tag ' + (e.type === 'drop' ? 'ok' : e.type === 'order' ? '' : 'dim') + '">' + esc(TYPES[e.type] || e.type) + '</span>';
+    const who = (e.handle ? esc(e.handle) + (e.platform ? ' · ' + esc(e.platform) : '') : '') + (e.card ? '<small class="small"> ' + esc(cardName(e.card)) + '</small>' : '') + (!e.handle && !e.card && e.note ? esc(e.note) : '');
+    const proof = e.proof ? '<a href="' + esc(e.proof) + '" target="_blank" rel="noopener">view ↗</a>' : '—';
+    return '<td class="n">' + esc(fmt.date(e.date)) + '</td><td>' + tag + '</td>' + (full ? '<td class="n">' + (e.sol != null ? esc(fmt.sol(e.sol)) : '—') + '</td>' : '') +
+      '<td class="n">' + (e.usd != null ? '$' + (+e.usd).toFixed(2) : '—') + '</td><td class="n">' + (e.gta != null ? nf(e.gta) : '—') + '</td><td>' + who + '</td><td>' + proof + '</td>';
+  }
   function renderLedger() {
     const tb = $('#ledger tbody'); tb.innerHTML = '';
-    state.entries.slice().reverse().forEach(e => {
-      const tr = document.createElement('tr');
-      const item = itemName(e.item) || e.note || '';
-      tr.innerHTML = '<td class="n">' + esc(fmt.date(e.date)) + '</td>' +
-        '<td><span class="tag ' + (e.type === 'buy' ? 'ok' : e.type === 'card' ? '' : 'dim') + '">' + esc(TYPES[e.type] || e.type) + '</span></td>' +
-        '<td class="n">' + (e.sol != null ? esc(fmt.sol(e.sol)) : '—') + '</td>' +
-        '<td class="n">' + (e.usd != null ? esc(fmt.usdFull(e.usd)) : '—') + '</td>' +
-        '<td class="n">' + (e.gta != null ? (e.type === 'buy' ? '−' : '+') + nf(e.gta) : '—') + '</td>' +
-        '<td>' + esc(item) + '</td>' +
-        '<td>' + (e.proof ? '<a href="' + esc(e.proof) + '" target="_blank" rel="noopener">view ↗</a>' : '—') + '</td>';
-      tb.appendChild(tr);
-    });
-    $('#l-empty').hidden = state.entries.length > 0;
-    $('#l-meta').textContent = 'account: ' + (state.account || '—') + ' · updated: ' + (state.updated || '—') + ' · entries: ' + state.entries.length;
+    state.entries.slice().reverse().forEach(e => { const tr = document.createElement('tr'); tr.innerHTML = rowHtml(e, true); tb.appendChild(tr); });
+    const th = $('#ledger-home tbody'); th.innerHTML = '';
+    state.entries.slice().reverse().slice(0, 5).forEach(e => { const tr = document.createElement('tr'); tr.innerHTML = rowHtml(e, false); th.appendChild(tr); });
+    $('#l-empty').hidden = state.entries.length > 0; $('#lh-empty').hidden = state.entries.length > 0;
+    $('#l-meta').textContent = 'updated: ' + (state.updated || '—') + ' · entries: ' + state.entries.length;
   }
   $('#csv').addEventListener('click', () => {
-    const rows = [['date', 'type', 'sol', 'usd', 'gta', 'item', 'note', 'proof']];
-    state.entries.forEach(e => rows.push([e.date, e.type, e.sol, e.usd, e.gta, itemName(e.item) || e.item || '', e.note || '', e.proof || '']));
+    const rows = [['date', 'type', 'sol', 'usd', 'gta', 'card', 'handle', 'platform', 'note', 'proof']];
+    state.entries.forEach(e => rows.push([e.date, e.type, e.sol, e.usd, e.gta, e.card, e.handle, e.platform, e.note, e.proof]));
     const csv = rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'bukz-ledger.csv';
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
@@ -255,17 +225,17 @@
   function missions() {
     const L = state.live, mc = L ? L.marketCap : 0;
     return [
-      { n: 'Open the shop', d: 'The token goes live on pump.fun and the CA lands on this page.', ok: !!CA, r: 'the lot opens' },
+      { n: 'Open the shop', d: 'The token goes live on pump.fun and the CA lands on this page.', ok: !!CA, r: 'the shop opens' },
       { n: 'Bond', d: 'The curve fills and the pool moves to PumpSwap. The creator fee tier unlocks.', ok: !!(L && L.bonded), r: 'full fee tier' },
       { n: 'Dex paid', d: 'The chart gets its name, logo and links.', ok: !!(L && L.dexPaid), r: 'a face on the chart' },
-      { n: 'First cash card', d: 'Fees claimed, sold, and spent on the first official cash card.', ok: state.cardsGta > 0, r: 'first receipt on the wall' },
-      { n: 'First car on the lot', d: 'The sports car is parked in the garage with a screenshot.', ok: state.owned.size >= 1, r: 'the garage opens' },
+      { n: 'First order delivered', d: 'Someone gifts a card through the shop and the code lands.', ok: state.orders.length >= 1, r: 'first receipt on the wall' },
+      { n: 'First drop', d: 'The first card bought with fees and gifted to a handle.', ok: state.drops.length >= 1, r: 'the drops begin' },
       { n: '$100K market cap', d: 'Live from the chart.', ok: mc >= 1e5, r: 'wanted level ★★' },
-      { n: 'GTA$ 5M through the shop', d: 'Five million in-game dollars bought with fees, total.', ok: state.cardsGta >= 5e6, r: 'a wall of receipts' },
-      { n: 'Five items', d: 'Almost half the showroom has receipts.', ok: state.owned.size >= 5, r: 'the lot fills up' },
+      { n: 'GTA$ 5M delivered', d: 'Five million in-game dollars through the shop, orders and drops together.', ok: state.gtaOut >= 5e6, r: 'a wall of receipts' },
+      { n: '50 handles served', d: 'Fifty different players with cash from the shop.', ok: state.handles.size >= 50, r: 'the city knows the shop' },
       { n: '$1M market cap', d: 'Live from the chart.', ok: mc >= 1e6, r: 'wanted level ★★★★★' },
-      { n: 'The new city', d: 'November 19. The garage moves there on day one.', ok: Date.now() >= release, r: 'new showroom, new prices' },
-      { n: 'A full showroom', d: 'Every item in the showroom has a receipt.', ok: ITEMS.length > 0 && ITEMS.every(i => state.owned.has(i.id)), r: 'ten cars, one wall' }
+      { n: 'The new city', d: 'November 19. The shelf switches on day one.', ok: Date.now() >= release, r: 'new city, new cards' },
+      { n: 'GTA$ 100M delivered', d: 'A hundred million in-game dollars, every one on the ledger.', ok: state.gtaOut >= 1e8, r: 'the shop for the new city' }
     ];
   }
   function renderMissions() {
@@ -285,15 +255,20 @@
   function setPct(el) { el.style.setProperty('--pct', ((el.value - el.min) / (el.max - el.min) * 100) + '%'); }
   function calc() {
     setPct(vol); setPct(fee);
-    const v = +vol.value, f = +fee.value, fees = v * f / 100, gta = fees * GPU;
+    const v = +vol.value, f = +fee.value, fees = v * f / 100, price = DROP ? DROP.usd : 99.99;
+    const perWeek = fees * 7 / price;
     $('#c-vol-o').textContent = fmt.usdFull(v); $('#c-fee-o').textContent = f.toFixed(2) + '%';
-    $('#c-fees').textContent = fmt.usdFull(fees); $('#c-gta').textContent = fmt.gta(gta);
-    const dur = need => { if (need <= 0) return 'now'; if (gta <= 0) return '—'; const h = need / gta * 24; if (h < 1) return Math.max(1, Math.round(h * 60)) + ' min'; if (h < 48) return (h < 10 ? h.toFixed(1) : Math.round(h)) + ' hours'; const d = h / 24; return (d < 10 ? d.toFixed(1) : Math.round(d)) + ' days'; };
-    const remaining = ITEMS.filter(i => !state.owned.has(i.id)).reduce((a, b) => a + b.gta, 0);
-    $('#c-days').textContent = state.next ? dur(Math.max(0, state.next.gta - state.bal)) : 'lot is full';
-    $('#c-cars').textContent = remaining > 0 ? dur(Math.max(0, remaining - state.bal)) : 'bought';
+    $('#c-fees').textContent = fmt.usdFull(fees); $('#c-cars').textContent = perWeek >= 10 ? String(Math.round(perWeek)) : perWeek.toFixed(1);
+    $('#c-gta').textContent = fmt.gta(perWeek * (DROP ? DROP.gta : 8e6));
+    const need = Math.max(0, price - state.pot); const h = fees > 0 ? need / fees * 24 : Infinity;
+    $('#c-days').textContent = need <= 0 ? 'funded' : !isFinite(h) ? '—' : h < 1 ? Math.max(1, Math.round(h * 60)) + ' min' : h < 48 ? (h < 10 ? h.toFixed(1) : Math.round(h)) + ' hours' : (h / 24 < 10 ? (h / 24).toFixed(1) : Math.round(h / 24)) + ' days';
   }
   vol.addEventListener('input', calc); fee.addEventListener('input', calc);
+
+  /* ---------- SOL price for order totals */
+  async function solPrice() {
+    try { const j = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd', { cache: 'no-store' }).then(r => r.json()); if (j && j.solana && j.solana.usd) { state.solUsd = +j.solana.usd; orderSum(); } } catch (e) { }
+  }
 
   /* ---------- live data (DexScreener), honest offline states */
   function offline(word, stamp) { const lw = $('#live-word'); if (lw) lw.textContent = word; const dot = $('.dot'); if (dot) dot.classList.remove('live'); document.body.classList.remove('live'); $('#stamp').textContent = stamp; if (state.live) { state.live = null; renderTicker(); } }
@@ -332,8 +307,8 @@
     state.lastMc = L.marketCap;
     renderMissions(); renderTicker();
   }
-  function rug(L) { $('#rug-why').textContent = fmt.pct(L.h1) + ' in an hour. the lot is still here.'; $('#rugged').hidden = false; document.body.classList.add('rug'); }
-  $('#rug-x').addEventListener('click', () => { $('#rugged').hidden = true; document.body.classList.remove('rug'); toast("respawned. the garage didn't move."); });
+  function rug(L) { $('#rug-why').textContent = fmt.pct(L.h1) + ' in an hour. the shop is still open.'; $('#rugged').hidden = false; document.body.classList.add('rug'); }
+  $('#rug-x').addEventListener('click', () => { $('#rugged').hidden = true; document.body.classList.remove('rug'); toast('respawned. the shop never closed.'); });
 
   /* ---------- route animation */
   const nodes = $$('#flow .node'); let fi = 0;
@@ -401,18 +376,12 @@
     document.body.classList.add('intro'); document.body.classList.remove('in');
     intro.hidden = false; intro.className = ''; $('#enter').hidden = true; $('#in-bar').style.width = '0%';
     scene.k = 1; scene.speed = 1.7; scene.last = 0;
-    $('#in-clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    let i = 0; $('#in-tip').textContent = TIPS[0];
     requestAnimationFrame(() => requestAnimationFrame(() => { intro.classList.add('go'); $('#in-bar').style.width = '100%'; }));
-    introTimer = setInterval(() => {
-      i++;
-      if (i >= TIPS.length - 1) { clearInterval(introTimer); $('#in-tip').textContent = TIPS[TIPS.length - 1]; $('#enter').hidden = false; intro.classList.add('ready'); return; }
-      $('#in-tip').textContent = TIPS[i];
-    }, 520);
+    introTimer = setTimeout(() => { $('#enter').hidden = false; intro.classList.add('ready'); }, 2600);
   }
   function enterShop() {
     if (intro.hidden) return;
-    clearInterval(introTimer); try { sessionStorage.setItem('bukz-intro', '1'); } catch (e) { }
+    clearTimeout(introTimer); try { sessionStorage.setItem('bukz-intro', '1'); } catch (e) { }
     intro.classList.add('out'); document.body.classList.remove('intro'); document.body.classList.add('in');
     tweenScene(0.18, 0.35, 1600); moveInd();
     setTimeout(() => { intro.hidden = true; }, 900);
@@ -424,19 +393,6 @@
   let seen = false; try { seen = !!sessionStorage.getItem('bukz-intro'); } catch (e) { }
   if (REDUCED || (seen && !/[?&]intro\b/.test(location.search))) { intro.hidden = true; document.body.classList.remove('intro'); document.body.classList.add('in'); }
   else startIntro();
-
-  /* ---------- ticker */
-  function renderTicker() {
-    const parts = [];
-    const L = state.live;
-    if (L) parts.push('<span class="live"><em>live</em><b>' + fmt.usd(L.marketCap) + ' mcap</b> · ' + fmt.px(L.price) + ' · 1h ' + esc(fmt.pct(L.h1)) + '</span>');
-    else parts.push('<span><em class="dim">' + (CA ? 'offline' : 'pre-launch') + '</em><b>the shop for the new city</b></span>');
-    ITEMS.forEach((it, i) => { const st = statusOf(it); parts.push('<span><em class="' + TAGCLS[st] + '">' + LABEL[st] + '</em><b>#' + String(i + 1).padStart(2, '0') + ' ' + esc(it.name) + '</b> ' + esc(fmt.gtaShort(it.gta)) + '</span>'); });
-    parts.push('<span><em class="dim">garage</em><b>' + state.owned.size + ' of ' + ITEMS.length + '</b> items · ' + esc(fmt.gta(state.bal)) + ' in the account</span>');
-    parts.push('<span><em class="dim">ledger</em><b>' + state.entries.length + '</b> entries · ' + esc(fmt.sol(state.feesSol)) + ' claimed</span>');
-    const html = parts.join('');
-    $('#tk').innerHTML = html + html;
-  }
 
   /* ---------- pointer: tilt on items, light on cards */
   if (window.matchMedia && window.matchMedia('(hover: hover)').matches && !REDUCED) {
@@ -456,11 +412,31 @@
     (function step(now) { const u = d ? Math.min(1, (now - t0) / d) : 1, e = 1 - Math.pow(1 - u, 3); el.textContent = f(from + (to - from) * e); if (u < 1) requestAnimationFrame(step); })(t0);
   }
 
+
+  /* ---------- ticker */
+  function renderTicker() {
+    const parts = []; const L = state.live;
+    if (L) parts.push('<span class="live"><em>live</em><b>' + fmt.usd(L.marketCap) + ' mcap</b> · ' + fmt.px(L.price) + ' · 1h ' + esc(fmt.pct(L.h1)) + '</span>');
+    else parts.push('<span><em class="dim">' + (CA ? 'offline' : 'pre-launch') + '</em><b>the shop for the new city</b></span>');
+    CARDS.forEach(c => parts.push('<span><em>' + esc(c.name) + '</em><b>' + esc(fmt.gtaShort(c.gta)) + '</b> $' + c.usd.toFixed(2) + '</span>'));
+    parts.push('<span><em class="dim">delivered</em><b>' + esc(fmt.gta(state.gtaOut)) + '</b> · ' + state.handles.size + ' handles</span>');
+    parts.push('<span><em class="dim">drops</em><b>' + state.drops.length + '</b> · fee pot $' + state.pot.toFixed(2) + '</span>');
+    parts.push('<span><em class="dim">ledger</em><b>' + state.entries.length + '</b> entries · ' + esc(fmt.sol(state.feesSol)) + ' claimed</span>');
+    const html = parts.join(''); $('#tk').innerHTML = html + html;
+  }
+
+  /* ---------- count-ups */
+  function countTo(el, to, f) {
+    if (!el) return; const from = +el.dataset.v || 0; if (from === to) { el.textContent = f(to); return; }
+    el.dataset.v = to; const t0 = performance.now(), d = REDUCED ? 0 : 750;
+    (function step(now) { const u = d ? Math.min(1, (now - t0) / d) : 1, e = 1 - Math.pow(1 - u, 3); el.textContent = f(from + (to - from) * e); if (u < 1) requestAnimationFrame(step); })(t0);
+  }
+
   /* ---------- boot */
-  function renderAll() { renderNext(); renderItems(); renderGarage(); renderLedger(); renderMissions(); renderTicker(); calc(); }
+  function renderAll() { renderNext(); renderShelf(); renderDrops(); renderWall(); renderLedger(); renderMissions(); renderTicker(); calc(); }
   compute(); renderRates(); renderAll();
   go(location.hash.slice(1) || 'home', false);
-  loadLedger();
+  loadLedger(); solPrice();
   live(); setInterval(() => { if (!document.hidden) live(); }, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) live(); });
 })();

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>bukz</title>
-<meta name="description" content="bukz. The shop for the new city. Creator fees buy real in-game cars into one public garage. Every receipt on the wall.">
+<meta name="description" content="bukz. The shop for the new city. Buy in-game cash for any GTA player and gift it to their handle. The coin's fees pay for the drops. Every receipt on the wall.">
 <meta property="og:title" content="bukz — the shop for the new city">
-<meta property="og:description" content="Fees buy the cars. Receipts on the wall.">
+<meta property="og:description" content="Buy in-game cash for any GTA handle. Fees pay for the drops. Receipts on the wall.">
 <meta property="og:image" content="https://bukz.vercel.app/img/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://bukz.vercel.app/img/og.jpg">
@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="img/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 <noscript><style>body.intro .top,body.intro main,body.intro footer{visibility:visible!important}#intro{display:none}</style></noscript>
 </head>
 <body class="intro">
@@ -27,20 +27,17 @@
   <div class="in-box">
     <img class="in-mark" src="img/mark.png" alt="" width="84" height="94">
     <div class="in-word" aria-label="bukz"><span>b</span><span>u</span><span>k</span><span>z</span></div>
-    <div class="in-line">the shop for the new city.</div>
     <div class="in-load"><i id="in-bar"></i></div>
-    <div class="in-tip" id="in-tip">loading the new city…</div>
     <button class="btn in-enter" id="enter" hidden>Enter the shop</button>
   </div>
-  <div class="in-foot"><span id="in-clock">—</span><span>opening nov 19</span></div>
 </div>
 
 <header class="top">
   <a class="brand" href="#home"><img src="img/mark.png" alt="" width="34" height="38"><span>bukz</span></a>
   <nav class="tabs" id="tabs">
     <button data-tab="home" class="on">Shop</button>
-    <button data-tab="showroom">Showroom</button>
-    <button data-tab="garage">Garage</button>
+    <button data-tab="shelf">Shelf</button>
+    <button data-tab="drops">Drops</button>
     <button data-tab="ledger">Ledger</button>
     <button data-tab="heist">Heist board</button>
     <button data-tab="faq">FAQ</button>
@@ -59,15 +56,15 @@
   <div class="hero">
     <div class="hero-l">
       <h1><span class="grad">bukz</span></h1>
-      <p class="lead">A dealership that runs on trading fees. Every car on the lot is paid for by the chart, parked in one public garage, and logged with a receipt. The garage moves into the new city on day one.</p>
+      <p class="lead">Buy in-game cash for any GTA player and gift it to their handle. The coin's fees pay for the drops. Every receipt on the wall.</p>
       <div class="ca" id="ca-box" hidden>
         <code id="ca-text">CA not set. The shop opens with it.</code>
         <button class="btn sm" id="copyca" disabled>Copy</button>
       </div>
       <div class="row">
-        <a class="btn" id="buy" href="#" target="_blank" rel="noopener">Buy on pump.fun</a>
+        <button class="btn" data-go="shelf">Gift a card</button>
+        <a class="btn ghost" id="buy" href="#" target="_blank" rel="noopener">Buy on pump.fun</a>
         <a class="btn ghost" id="chart" href="#" target="_blank" rel="noopener">Chart</a>
-        <button class="btn ghost" data-go="showroom">See the showroom</button>
       </div>
     </div>
     <div class="hero-r">
@@ -87,7 +84,7 @@
         </div>
       </div>
       <div class="card next-card" id="next-card">
-        <div class="card-h"><span>Next on the lot</span><span class="tag" id="next-tag">queued</span></div>
+        <div class="card-h"><span>Next drop</span><span class="tag" id="next-tag">fee pot</span></div>
         <div class="next-name" id="next-name">—</div>
         <div class="bar"><i id="next-bar"></i></div>
         <div class="next-sub" id="next-sub">—</div>
@@ -95,73 +92,166 @@
     </div>
   </div>
 
-  <!-- the route: fees -> cards -> GTA$ -> car -->
-  <div class="route card">
-    <div class="card-h"><span>How a car gets on the lot</span><span class="mono">one loop, every week</span></div>
-    <div class="flow" id="flow">
-      <div class="node"><div class="ic coin">◎</div><b>Fees</b><small>every trade pays the creator fee</small></div>
-      <div class="arrow"><i></i><i></i><i></i></div>
-      <div class="node"><div class="ic card-ic">▭</div><b>Cash card</b><small>bought at the official store</small></div>
-      <div class="arrow"><i></i><i></i><i></i></div>
-      <div class="node"><div class="ic gta">$</div><b>In-game cash</b><small>lands in the shop account</small></div>
-      <div class="arrow"><i></i><i></i><i></i></div>
-      <div class="node"><div class="ic car">⬢</div><b>The car</b><small>parked in the garage, receipt on the wall</small></div>
+  <!-- the shelf, short -->
+  <div class="sec" id="home-shelf">
+    <div class="sec-h big"><h2>Send cash to any handle</h2><p>Pick a card, type a GTA handle, pay in SOL. The shop buys the official code and delivers it. You can send it to yourself.</p></div>
+    <div class="shelf" id="shelf-home"></div>
+    <p class="fine">Official cash cards at the official price, plus a <span id="fee-line">—</span> shop fee. Manual fulfilment: a person buys the code, a person sends it, a person posts the receipt.</p>
+  </div>
+
+  <!-- how it works -->
+  <div class="sec">
+    <div class="sec-h big"><h2>How an order works</h2><p>Four steps. No wallet connect, no form that goes nowhere.</p></div>
+    <div class="steps" id="steps">
+      <div class="step"><i>01</i><b>Pick a card</b><p>Six sizes, $2.99 to $99.99. The bigger the card, the better the rate.</p></div>
+      <div class="step"><i>02</i><b>Type a handle</b><p>The player's GTA handle, their platform, and an X handle the code can be sent to.</p></div>
+      <div class="step"><i>03</i><b>Send the order, then pay</b><p>The order goes to the shop on X. The shop confirms the SOL amount, you pay, done.</p></div>
+      <div class="step"><i>04</i><b>The code lands</b><p>The shop buys the official code for that platform and DMs it. Redeemed, logged, receipt on the wall.</p></div>
     </div>
   </div>
 
-  <!-- calculator -->
-  <div class="grid2">
-    <div class="card calc">
-      <div class="card-h"><span>Fee calculator</span><span class="mono">volume → cars</span></div>
-      <label>24h volume (USD) <input type="range" id="c-vol" min="10000" max="5000000" step="10000" value="500000"><output id="c-vol-o">$500,000</output></label>
-      <label>Creator fee share <input type="range" id="c-fee" min="0.05" max="0.95" step="0.05" value="0.95"><output id="c-fee-o">0.95%</output></label>
-      <div class="calc-out">
-        <div><small>Fees per day</small><b id="c-fees">—</b></div>
-        <div><small>In-game cash per day</small><b id="c-gta">—</b></div>
-        <div><small>Next item in</small><b id="c-days">—</b></div>
-        <div><small>Whole showroom in</small><b id="c-cars">—</b></div>
+  <!-- the route: fees -> cards -> handles -->
+  <div class="sec">
+    <div class="sec-h big"><h2>What the coin does</h2><p>Every trade pays a creator fee. The shop spends the fees on drops: cards bought with fee money and gifted to GTA handles.</p></div>
+    <div class="route card">
+      <div class="card-h"><span>The drop loop</span><span class="mono">every week, on the ledger</span></div>
+      <div class="flow" id="flow">
+        <div class="node"><div class="ic coin">◎</div><b>Fees</b><small>every trade of $BUKZ pays the creator fee</small></div>
+        <div class="arrow"><i></i><i></i><i></i></div>
+        <div class="node"><div class="ic card-ic">▭</div><b>Cash card</b><small>bought at the official store</small></div>
+        <div class="arrow"><i></i><i></i><i></i></div>
+        <div class="node"><div class="ic gta">@</div><b>A handle</b><small>a holder, a nominee, a creator</small></div>
+        <div class="arrow"><i></i><i></i><i></i></div>
+        <div class="node"><div class="ic car">✓</div><b>The receipt</b><small>screenshot on the wall, line on the ledger</small></div>
       </div>
-      <p class="fine">Creator fee tiers on pump.fun change with market cap; this uses the share you set. Past volume is not a promise.</p>
+    </div>
+    <div class="grid2">
+      <div class="card calc">
+        <div class="card-h"><span>Drop calculator</span><span class="mono">volume → drops</span></div>
+        <label>24h volume (USD) <input type="range" id="c-vol" min="10000" max="5000000" step="10000" value="500000"><output id="c-vol-o">$500,000</output></label>
+        <label>Creator fee share <input type="range" id="c-fee" min="0.05" max="0.95" step="0.05" value="0.95"><output id="c-fee-o">0.95%</output></label>
+        <div class="calc-out">
+          <div><small>Fees per day</small><b id="c-fees">—</b></div>
+          <div><small>Drops per week</small><b id="c-cars">—</b></div>
+          <div><small>In-game cash gifted per week</small><b id="c-gta">—</b></div>
+          <div><small>Next drop in</small><b id="c-days">—</b></div>
+        </div>
+        <p class="fine">Creator fee tiers on pump.fun change with market cap; this uses the share you set. Drops are the $99.99 card. Past volume is not a promise.</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><span>Cash card rates</span><span class="mono">official store</span></div>
+        <table class="tbl" id="rates">
+          <thead><tr><th>Card</th><th>Costs</th><th>Gives</th><th>Per $1</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="fine">The shop gifts the biggest card. Rates are the store's, not ours.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- day one -->
+  <div class="sec">
+    <div class="band card" id="dayone">
+      <div class="band-l">
+        <div class="eyebrow-s">Day one</div>
+        <h2>The new city opens</h2>
+        <p>The moment the new city sells in-game cash, the shelf switches. Same shop, same handles, same ledger, new city. Until then the shop sells the current game's cash.</p>
+      </div>
+      <div class="band-r">
+        <div class="cd-big" id="cd2"><div><b>--</b><i>days</i></div><div><b>--</b><i>hours</i></div><div><b>--</b><i>min</i></div><div><b>--</b><i>sec</i></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- live counters -->
+  <div class="sec">
+    <div class="sec-h big"><h2>The shop so far</h2><p>Every number here is a sum of ledger lines. Nothing ticks over because someone said so.</p></div>
+    <div class="garage-top">
+      <div class="card"><small>In-game cash delivered</small><b id="g-bal">GTA$ 0</b></div>
+      <div class="card"><small>Handles served</small><b id="g-n">0</b></div>
+      <div class="card"><small>Drops paid by fees</small><b id="g-usd">0</b></div>
+      <div class="card"><small>Fees claimed</small><b id="g-sol">0 SOL</b></div>
+    </div>
+  </div>
+
+  <!-- latest ledger -->
+  <div class="sec">
+    <div class="sec-h big"><h2>Latest on the ledger</h2><p>The last five lines. The full thing, with CSV, lives on the Ledger tab.</p></div>
+    <table class="tbl" id="ledger-home"><thead><tr><th>Date</th><th>Entry</th><th>USD</th><th>GTA$</th><th>Handle</th><th>Proof</th></tr></thead><tbody></tbody></table>
+    <div class="empty" id="lh-empty">The first entry is still ahead. <button class="lnk" data-go="ledger">Open the ledger</button></div>
+  </div>
+
+  <!-- wall of receipts -->
+  <div class="sec">
+    <div class="sec-h big"><h2>Wall of receipts</h2><p>Every delivery, as a screenshot. Handles stay as the player wrote them; everything else is blurred.</p></div>
+    <div class="wall" id="wall"></div>
+    <div class="empty" id="wall-empty">No receipts yet. The first one goes up with the first delivery.</div>
+  </div>
+
+  <p class="fine center">bukz is an independent fan project, not affiliated with Rockstar Games or Take-Two. Cash cards are bought from official stores at the published price. Drops are gifts paid by fees, not a return and not a promise. Memecoins are extremely risky. Nothing here is advice.</p>
+</section>
+
+<!-- ================= shelf -->
+<section class="panel" id="tab-shelf">
+  <div class="sec-h"><h2>The shelf</h2><p>The official cash card lineup. Pick one, type a handle, send the order. The shop confirms on X before you pay anything.</p></div>
+  <div class="shelf" id="shelf"></div>
+  <div class="grid2 sec">
+    <div class="card">
+      <div class="card-h"><span>What you need</span></div>
+      <ul class="list">
+        <li><b>A GTA handle.</b> The recipient's online name, exactly as it appears in the game.</li>
+        <li><b>Their platform.</b> PC, PlayStation or Xbox. Codes are platform-specific.</li>
+        <li><b>An X handle for delivery.</b> The code is sent by DM, so DMs from the shop must be open.</li>
+        <li><b>SOL.</b> You pay after the shop confirms the amount. Never before.</li>
+      </ul>
     </div>
     <div class="card">
-      <div class="card-h"><span>Cash card rates</span><span class="mono">official store</span></div>
-      <table class="tbl" id="rates">
-        <thead><tr><th>Card</th><th>Costs</th><th>Gives</th><th>Per $1</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <p class="fine">The shop buys the biggest card the fees allow. Rates are the store's, not ours.</p>
+      <div class="card-h"><span>What the shop does</span></div>
+      <ul class="list">
+        <li>Replies to your order on X with the total in SOL and where to send it.</li>
+        <li>Buys the official code for the right platform once the SOL arrives.</li>
+        <li>DMs the code to the X handle you gave. Usually the same day.</li>
+        <li>Logs the order on the ledger: date, card, handle, proof. Never the code.</li>
+      </ul>
     </div>
   </div>
+  <p class="fine">Delivery depends on what each platform allows for codes in the recipient's region; the shop says so before you pay. Official cash cards at the official price plus the shop fee.</p>
 </section>
 
-<!-- ================= showroom -->
-<section class="panel" id="tab-showroom">
-  <div class="sec-h"><h2>Showroom</h2><p>What the shop buys, in order. Prices are in-game. Status comes from the ledger.</p></div>
-  <div class="filters" id="filters"><button class="on" data-f="all">All</button><button data-f="Vehicle">Vehicles</button><button data-f="Property">Property</button><button data-f="Aircraft">Aircraft</button><button data-f="Business">Business</button><button data-f="Vessel">Vessels</button></div>
-  <div class="items" id="items"></div>
-</section>
-
-<!-- ================= garage -->
-<section class="panel" id="tab-garage">
-  <div class="sec-h"><h2>Garage</h2><p>What the shop owns. Every item here has a receipt.</p></div>
+<!-- ================= drops -->
+<section class="panel" id="tab-drops">
+  <div class="sec-h"><h2>Drops</h2><p>Cards bought with the coin's fees and gifted to GTA handles. Holders who registered, handles the community nominates, people who make the best content about the shop.</p></div>
   <div class="garage-top">
-    <div class="card"><small>Items owned</small><b id="g-n">0</b></div>
-    <div class="card"><small>In-game cash in the account</small><b id="g-bal">GTA$ 0</b></div>
-    <div class="card"><small>Spent on cards</small><b id="g-usd">$0</b></div>
-    <div class="card"><small>Fees claimed</small><b id="g-sol">0 SOL</b></div>
+    <div class="card"><small>Drops so far</small><b id="d-n">0</b></div>
+    <div class="card"><small>In-game cash gifted</small><b id="d-gta">GTA$ 0</b></div>
+    <div class="card"><small>Fee pot right now</small><b id="d-pot">$0</b></div>
+    <div class="card"><small>Next drop</small><b id="d-next">—</b></div>
   </div>
-  <div class="items" id="garage"></div>
-  <div class="empty" id="g-empty">The garage is empty. The first car is <b id="g-away">—</b> away.</div>
+  <div class="grid2 sec">
+    <div class="card">
+      <div class="card-h"><span>Register your handle</span><span class="mono">holders</span></div>
+      <p>Hold $BUKZ, post your GTA handle and platform from the account you hold with, and you're in the draw for every drop. One handle per account.</p>
+      <div class="row"><a class="btn" id="reg" href="#" target="_blank" rel="noopener">Register on X</a></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span>Nominate a handle</span><span class="mono">anyone</span></div>
+      <p>Know a player who deserves a card? A streamer, a friend, someone who posted a terrible chart. Nominate them and say why. The best nominations get a drop.</p>
+      <div class="row"><a class="btn ghost" id="nom" href="#" target="_blank" rel="noopener">Nominate on X</a></div>
+    </div>
+  </div>
+  <div class="sec-h"><h2>Drop log</h2></div>
+  <div class="items" id="drops-list"></div>
+  <div class="empty" id="d-empty">No drops yet. The first one is <b id="d-away">—</b> of fees away.</div>
 </section>
 
 <!-- ================= ledger -->
 <section class="panel" id="tab-ledger">
-  <div class="sec-h"><h2>Ledger</h2><p>Every claim, every card, every purchase. Public, exportable, boring on purpose.</p></div>
+  <div class="sec-h"><h2>Ledger</h2><p>Every fee claim, every card, every delivery. Public, exportable, boring on purpose.</p></div>
   <div class="row between">
-    <div class="mono small" id="l-meta">account: — · updated: —</div>
+    <div class="mono small" id="l-meta">updated: — · entries: 0</div>
     <div class="row"><button class="btn ghost sm" id="csv">Export CSV</button><a class="btn ghost sm" href="ledger.json" target="_blank" rel="noopener">Raw JSON</a></div>
   </div>
-  <table class="tbl" id="ledger"><thead><tr><th>Date</th><th>Entry</th><th>SOL</th><th>USD</th><th>GTA$</th><th>Item</th><th>Proof</th></tr></thead><tbody></tbody></table>
+  <table class="tbl" id="ledger"><thead><tr><th>Date</th><th>Entry</th><th>SOL</th><th>USD</th><th>GTA$</th><th>Handle</th><th>Proof</th></tr></thead><tbody></tbody></table>
   <div class="empty" id="l-empty">The first entry is still ahead.</div>
 </section>
 
@@ -173,37 +263,45 @@
 
 <!-- ================= faq -->
 <section class="panel" id="tab-faq">
-  <div class="sec-h"><h2>Talk to the fence</h2><p>Straight answers.</p></div>
+  <div class="sec-h"><h2>Talk to the shop</h2><p>Straight answers.</p></div>
   <div class="faq" id="faq">
-    <details open><summary>What is bukz?</summary><p>A memecoin on Solana with one job: the creator fees from its trading buy real in-game vehicles and properties into a single public game account that the shop controls. The showroom lists what it buys, the garage shows what it owns, the ledger shows every step.</p></details>
-    <details><summary>How do fees become cars?</summary><p>Fees are claimed from pump.fun in SOL, sold for dollars, spent on official in-game cash cards from the publisher's own store, which land as in-game cash in the shop account. The account buys the next item in the showroom order. Receipts and screenshots go on the ledger.</p></details>
-    <details><summary>Do holders get the cars?</summary><p>No. The items stay in the shop's account. They are not backing for the token, they are never sold for holders, and they are never handed out. The point is a garage everyone can see filling up.</p></details>
-    <details><summary>Who controls the account?</summary><p>The shop's team. The account name goes on the ledger the day the first purchase is made, with screenshots. The ledger is a plain JSON file anyone can read.</p></details>
-    <details><summary>What happens on November 19?</summary><p>The new game opens. If the new city has purchases, the garage moves there on day one and the showroom list is replaced with the new city's prices. If it doesn't, the shop keeps buying in the current game. Either way the ledger continues.</p></details>
-    <details><summary>Is this affiliated with Rockstar or Take-Two?</summary><p>No. bukz is an independent fan project. Cash cards are bought from the official store at the published price like any other customer. All game names and marks belong to their owners.</p></details>
+    <details open><summary>What is bukz?</summary><p>A shop and a coin. The shop sells official in-game cash cards for GTA and delivers them to any player's handle. The coin, $BUKZ on Solana, pays a creator fee on every trade, and the shop spends those fees on drops: cards gifted to GTA handles. Every order and every drop is logged on a public ledger.</p></details>
+    <details><summary>How do I gift cash to someone?</summary><p>Open the shelf, pick a card, type the recipient's GTA handle and platform and an X handle for delivery, then send the order. The shop replies on X with the SOL amount. You pay, the shop buys the official code for that platform and DMs it. The order goes on the ledger with a receipt.</p></details>
+    <details><summary>Can I send it to myself?</summary><p>Yes. Your own handle, your own X account.</p></details>
+    <details><summary>What does a drop mean?</summary><p>A card bought with the coin's fee money and gifted to a GTA handle for free. Holders who registered their handle are in every draw. The community can nominate handles too. Drops are gifts, not a return, not a dividend, and not a promise.</p></details>
+    <details><summary>Where do the fees go, exactly?</summary><p>Fees are claimed from pump.fun in SOL, sold for dollars, and spent on cards for drops. Every claim is a line on the ledger with the SOL amount; every drop is a line with the card, the handle and the proof. If it isn't on the ledger, it didn't happen.</p></details>
+    <details><summary>Which platforms?</summary><p>PC, PlayStation and Xbox. Codes are platform-specific and some platforms restrict codes by region. The shop tells you what's possible before you pay.</p></details>
+    <details><summary>What happens on November 19?</summary><p>The new city opens. The moment it sells in-game cash, the shelf switches to the new city's cards. Same shop, same ledger. If that takes a while after launch, the shop keeps selling the current game's cash until then.</p></details>
+    <details><summary>Is this affiliated with Rockstar or Take-Two?</summary><p>No. bukz is an independent fan project. Cash cards are bought from official stores at the published price and delivered as official codes. The shop is a buyer and a courier, nothing more. All game names and marks belong to their owners.</p></details>
     <details><summary>Is this advice?</summary><p>No. Memecoins are extremely risky and most go to zero. Nothing on this site is financial advice.</p></details>
   </div>
 </section>
 </main>
 
-<!-- drawer -->
+<!-- order drawer -->
 <div id="drawer" hidden>
   <div class="dr-bg"></div>
   <div class="dr">
     <button class="x" id="dr-x">×</button>
+    <div class="dr-art" id="dr-art"></div>
     <div class="dr-tier" id="dr-tier"></div>
     <h3 id="dr-name"></h3>
     <div class="dr-price" id="dr-price"></div>
     <p id="dr-note"></p>
-    <div class="dr-stat" id="dr-stat"></div>
-    <div class="bar"><i id="dr-bar"></i></div>
-    <div class="dr-sub" id="dr-sub"></div>
-    <div class="dr-rec" id="dr-rec"></div>
+    <form id="order" autocomplete="off">
+      <label>GTA handle <input id="o-handle" required maxlength="40" placeholder="the player's online name"></label>
+      <label>Platform <select id="o-plat"></select></label>
+      <label>X handle for delivery <input id="o-x" required maxlength="40" placeholder="@handle, DMs open"></label>
+      <label>Note (optional) <input id="o-note" maxlength="80" placeholder="who it's from, or why"></label>
+      <div class="sum" id="o-sum"></div>
+      <div class="row"><button class="btn" type="submit" id="o-send">Send order on X</button><button class="btn ghost" type="button" id="o-copy">Copy order</button></div>
+      <div class="dr-rec" id="dr-rec">You pay nothing here. The shop replies to the order with the SOL total; pay that, the code arrives by DM, the receipt goes on the wall.</div>
+    </form>
   </div>
 </div>
 
 <!-- rugged -->
-<div id="rugged" hidden><div><b>RUGGED</b><span id="rug-why">-30% in an hour. the lot is still here.</span><button class="btn" id="rug-x">respawn</button></div></div>
+<div id="rugged" hidden><div><b>RUGGED</b><span id="rug-why">-30% in an hour. the shop is still open.</span><button class="btn" id="rug-x">respawn</button></div></div>
 <div id="toasts"></div>
 
 <footer>
@@ -211,7 +309,7 @@
   <div class="small"><button class="lnk" id="replay">replay intro</button> · keys 1–6 switch tabs</div>
 </footer>
 
-<script src="config.js?v=2"></script>
-<script src="app.js?v=4"></script>
+<script src="config.js?v=3"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
